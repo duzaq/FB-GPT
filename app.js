@@ -67,7 +67,7 @@ app.get("/webhook", (req, res) => {
 // Creates the endpoint for your webhook
 app.post("/webhook", (req, res) => {
   let body = req.body;
-  console.log(1, entry.messaging[0]);
+  console.log("2 >>" + entry.messaging[0]);
   // Checks if this is an event from a page subscription
   if (body.object === "page") {
     // Iterates over each entry - there may be multiple if batched
@@ -100,7 +100,7 @@ app.post("/webhook", (req, res) => {
 // Handles messages events
 async function handleMessage(senderPsid, receivedMessage) {
   let response;
-  console.log(2, "handleMessage: " + senderPsid, receivedMessage.text);
+  console.log("3 >>" + "handleMessage: " + senderPsid, receivedMessage.text);
   // Checks if the message contains text
   if (receivedMessage.text) {
     // Create the payload for a basic text message, which
@@ -159,7 +159,10 @@ async function handleMessage(senderPsid, receivedMessage) {
 // Handles messaging_postbacks events
 function handlePostback(senderPsid, receivedPostback) {
   let response;
-  console.log(3, "handleMessage: " + senderPsid, receivedPostback.payload);
+  console.log(
+    "1 >>" + "handleMessage: " + senderPsid,
+    receivedPostback.payload
+  );
   // Get the payload for the postback
   let payload = receivedPostback.payload;
 
