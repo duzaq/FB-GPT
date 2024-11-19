@@ -17,18 +17,17 @@
  * 3. Add your VERIFY_TOKEN and PAGE_ACCESS_TOKEN to your environment vars
  */
 
-'use strict';
+"use strict";
 
 // Use dotenv to read .env vars into Node
-require('dotenv').config();
+require("dotenv").config();
 
 // Imports dependencies and set up http server
-const
-  request = require('request'),
-  express = require('express'),
-  { urlencoded, json } = require('body-parser'),
-  app = express()
-const axios = require('axios')
+const request = require("request"),
+  express = require("express"),
+  { urlencoded, json } = require("body-parser"),
+  app = express();
+const axios = require("axios");
 // Parse application/x-www-form-urlencoded
 app.use(urlencoded({ extended: true }));
 
@@ -36,32 +35,29 @@ app.use(urlencoded({ extended: true }));
 app.use(json());
 
 // Respond with 'Hello World' when a GET request is made to the homepage
-app.get('/', function (_req, res) {
-  res.send('Hello World');
+app.get("/", function (_req, res) {
+  res.send("Hello World");
 });
 
 // Adds support for GET requests to our webhook
-app.get('/webhook', (req, res) => {
-
+app.get("/webhook", (req, res) => {
   // Your verify token. Should be a random string.
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
   // Parse the query params
-  let mode = req.query['hub.mode'];
-  let token = req.query['hub.verify_token'];
-  let challenge = req.query['hub.challenge'];
+  let mode = req.query["hub.mode"];
+  let token = req.query["hub.verify_token"];
+  let challenge = req.query["hub.challenge"];
 
   // Checks if a token and mode is in the query string of the request
   if (mode && token) {
-
     // Checks the mode and token sent is correct
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-
+    if (mode === "subscribe" && token === VERIFY_TOKEN) {
       // Responds with the challenge token from the request
-      console.log('WEBHOOK_VERIFIED');
+      console.log("WEBHOOK_VERIFIED");
       res.status(200).send(challenge);
-
     } else {
+      console.log("WEBHOOK_ERRO");
       // Responds with '403 Forbidden' if verify tokens do not match
       res.sendStatus(403);
     }
@@ -69,22 +65,20 @@ app.get('/webhook', (req, res) => {
 });
 
 // Creates the endpoint for your webhook
-app.post('/webhook', (req, res) => {
+app.post("/webhook", (req, res) => {
   let body = req.body;
-
+  console.log(1, entry.messaging[0]);
   // Checks if this is an event from a page subscription
-  if (body.object === 'page') {
-
+  if (body.object === "page") {
     // Iterates over each entry - there may be multiple if batched
     body.entry.forEach(function (entry) {
-
       // Gets the body of the webhook event
       let webhookEvent = entry.messaging[0];
       console.log(webhookEvent);
 
       // Get the sender PSID
       let senderPsid = webhookEvent.sender.id;
-      console.log('Sender PSID: ' + senderPsid);
+      console.log("Sender PSID: " + senderPsid);
 
       // Check if the event is a message or postback and
       // pass the event to the appropriate handler function
@@ -96,9 +90,8 @@ app.post('/webhook', (req, res) => {
     });
 
     // Returns a '200 OK' response to all requests
-    res.status(200).send('EVENT_RECEIVED');
+    res.status(200).send("EVENT_RECEIVED");
   } else {
-
     // Returns a '404 Not Found' if event is not from a page subscription
     res.sendStatus(404);
   }
@@ -107,30 +100,31 @@ app.post('/webhook', (req, res) => {
 // Handles messages events
 async function handleMessage(senderPsid, receivedMessage) {
   let response;
-
+  console.log(2, "handleMessage: " + senderPsid, receivedMessage.text);
   // Checks if the message contains text
   if (receivedMessage.text) {
     // Create the payload for a basic text message, which
     // will be added to the body of your request to the Send API
     response = {
-      'text': await askGPT(receivedMessage.text)
+      text: await askGPT(receivedMessage.text),
     };
   } else if (receivedMessage.attachments) {
-
     // Get the URL of the message attachment
     let attachmentUrl = receivedMessage.attachments[0].payload.url;
     response = {
-      'attachment': {
-        'type': 'template',
-        'payload': {
-          'template_type': 'generic',
-          'elements': [{
-            'title': "Sorry, I can't read images.",
-            'image_url': attachmentUrl
-          }]
-        }
-      }
-    }
+      attachment: {
+        type: "template",
+        payload: {
+          template_type: "generic",
+          elements: [
+            {
+              title: "Sorry, I can't read images.",
+              image_url: attachmentUrl,
+            },
+          ],
+        },
+      },
+    };
     // response = {
     //   'attachment': {
     //     'type': 'template',
@@ -165,15 +159,15 @@ async function handleMessage(senderPsid, receivedMessage) {
 // Handles messaging_postbacks events
 function handlePostback(senderPsid, receivedPostback) {
   let response;
-
+  console.log(3, "handleMessage: " + senderPsid, receivedPostback.payload);
   // Get the payload for the postback
   let payload = receivedPostback.payload;
 
   // Set the response based on the postback payload
-  if (payload === 'yes') {
-    response = { 'text': 'Thanks!' };
-  } else if (payload === 'no') {
-    response = { 'text': 'Oops, try sending another image.' };
+  if (payload === "yes") {
+    response = { text: "Thanks!" };
+  } else if (payload === "no") {
+    response = { text: "Oops, try sending another image." };
   }
   // Send the message to acknowledge the postback
   callSendAPI(senderPsid, response);
@@ -181,44 +175,45 @@ function handlePostback(senderPsid, receivedPostback) {
 
 // Sends response messages via the Send API
 function callSendAPI(senderPsid, response) {
-
   // The page access token we have generated in your app settings
   const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
   // Construct the message body
   let requestBody = {
-    'recipient': {
-      'id': senderPsid
+    recipient: {
+      id: senderPsid,
     },
-    'message': response
+    message: response,
   };
 
   // Send the HTTP request to the Messenger Platform
-  request({
-    'uri': 'https://graph.facebook.com/v2.6/me/messages',
-    'qs': { 'access_token': PAGE_ACCESS_TOKEN },
-    'method': 'POST',
-    'json': requestBody
-  }, (err, _res, _body) => {
-    if (!err) {
-      console.log('Message sent!');
-    } else {
-      console.error('Unable to send message:' + err);
+  request(
+    {
+      uri: "https://graph.facebook.com/v2.6/me/messages",
+      qs: { access_token: PAGE_ACCESS_TOKEN },
+      method: "POST",
+      json: requestBody,
+    },
+    (err, _res, _body) => {
+      if (!err) {
+        console.log("Message sent!");
+      } else {
+        console.error("Unable to send message:" + err);
+      }
     }
-  });
+  );
 }
 
 // listen for requests :)
-var listener = app.listen(process.env.PORT, function () {
-  console.log('Your app is listening on port ' + listener.address().port);
+var listener = app.listen(36443, function () {
+  //var listener = app.listen(process.env.PORT, function () {
+  console.log("Your app is listening on port " + listener.address().port);
 });
-
-
 
 async function askGPT(question) {
   const apiEndpoint =
-    'https://api.openai.com/v1/engines/text-davinci-003/completions'
-  const accessToken = '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'
+    "https://api.openai.com/v1/engines/text-davinci-003/completions";
+  const accessToken = "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";
 
   async function askQuestion(question) {
     try {
@@ -228,23 +223,23 @@ async function askGPT(question) {
           prompt: `Q: ${question}\nA:`,
           max_tokens: 50,
           n: 1,
-          stop: '\n'
+          stop: "\n",
         },
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         }
-      )
+      );
 
-      return response.data.choices[0].text.trim()
+      return response.data.choices[0].text.trim();
     } catch (error) {
-      console.error(`Error asking question: ${question}`, '')
+      console.error(`Error asking question: ${question}`, "");
     }
   }
 
-  const answer = await askQuestion(question).then(res => res)
+  const answer = await askQuestion(question).then((res) => res);
 
   /*
       if (answer) {
@@ -252,8 +247,8 @@ async function askGPT(question) {
       }
       */
   if (answer) {
-    return `A: ${answer}`
+    return `A: ${answer}`;
   } else {
-    return 'Error!'
+    return "Error!";
   }
 }
