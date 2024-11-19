@@ -67,7 +67,7 @@ app.get("/webhook", (req, res) => {
 // Creates the endpoint for your webhook
 app.post("/webhook", (req, res) => {
   let body = req.body;
-  console.log("2 >>" + entry.messaging[0]);
+  console.log("2 >>" + body);
   // Checks if this is an event from a page subscription
   if (body.object === "page") {
     // Iterates over each entry - there may be multiple if batched
@@ -172,10 +172,12 @@ function handlePostback(senderPsid, receivedPostback) {
   } else if (payload === "no") {
     response = { text: "Oops, try sending another image." };
   }
+  // senderid:8583465948405334recipientid:518428884845337
   // Send the message to acknowledge the postback
   callSendAPI(senderPsid, response);
 }
 
+callSendAPI(8583465948405334, "sdf..");
 // Sends response messages via the Send API
 function callSendAPI(senderPsid, response) {
   // The page access token we have generated in your app settings
@@ -186,20 +188,23 @@ function callSendAPI(senderPsid, response) {
     recipient: {
       id: senderPsid,
     },
-    message: response,
+    messaging_type: "RESPONSE",
+    message: {
+      text: response,
+    },
   };
 
   // Send the HTTP request to the Messenger Platform
   request(
     {
-      uri: "https://graph.facebook.com/v2.6/me/messages",
+      uri: "https://graph.facebook.com/v21.0/518428884845337/messages",
       qs: { access_token: PAGE_ACCESS_TOKEN },
       method: "POST",
       json: requestBody,
     },
     (err, _res, _body) => {
       if (!err) {
-        console.log("Message sent!");
+        console.log("Message sent!" + err);
       } else {
         console.error("Unable to send message:" + err);
       }
@@ -208,8 +213,8 @@ function callSendAPI(senderPsid, response) {
 }
 
 // listen for requests :)
-//var listener = app.listen(36443, function () {
-var listener = app.listen(process.env.PORT, function () {
+var listener = app.listen(33325, function () {
+  //var listener = app.listen(process.env.PORT, function () {
   console.log("Your app is listening on port " + listener.address().port);
 });
 
